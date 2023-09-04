@@ -39,6 +39,10 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     private int fogAnimLen = 200;
     private Image fogImage;
 
+    private int mousex;
+    private int mousey;
+
+
     private Color[] hintColors = {
             Color.BLACK,
             new Color(0, 0, 255),
@@ -102,8 +106,9 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                 // if not discovered and the fade animation hasn't yet increased to fogAnimLen
                 if (fadeProg[i][j] < fogAnimLen) {
                     // lower the transparency as the fadeProg increases
-                    float transparency = (1 - (float) fadeProg[i][j] / fogAnimLen) / 3;
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency));
+                    float transparency = 1 - (float) fadeProg[i][j] / fogAnimLen;
+    
+                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3));
                     drawFogTile(g2, i, j, tileSize, numCircles, rand);
                 }
             }
@@ -129,6 +134,21 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                     + rand.nextInt(tileSize / 2) - tileSize / 4 + boardManager.boardY;
 
             // Draw a transparent fog circle
+
+            if(mouseLoc != null) {
+                //use x, y, mousex, mousey functions to change x and y to move away from the mouse the closer the mouse is
+                int dx = x - mousex;
+                int dy = y - mousey;
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                double distFactor = 1 - dist / 100;
+                if(distFactor < 0) distFactor = 0;
+                x += dx * distFactor;
+                y += dy * distFactor;
+                
+
+
+            }
+
             drawFogCircle(g2, x, y, (int) ((double) tileSize * 0.9d));
         }
     }
@@ -257,8 +277,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     }
 
     public int[] getMousePos(MouseEvent e) {
-        int mouseX = e.getX();
-        int mouseY = e.getY();
+        mousex = e.getX();
+        mousey = e.getY();
         // get the board entry that the mouse is over
         int boardX = boardManager.boardX;
         int boardY = boardManager.boardY;
@@ -268,9 +288,9 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         int tileW = boardW / boardManager.h;
         int tileH = boardH / boardManager.w;
 
-        if (mouseX >= boardX && mouseX <= boardX + boardW - 5 && mouseY >= boardY && mouseY <= boardY + boardH - 5) {
-            int x = (mouseY - boardY) / tileH;
-            int y = (mouseX - boardX) / tileW;
+        if (mousex >= boardX && mousex <= boardX + boardW - 5 && mousey >= boardY && mousey <= boardY + boardH - 5) {
+            int x = (mousey - boardY) / tileH;
+            int y = (mousex - boardX) / tileW;
             return new int[] { x, y };
         } else {
             return null;
