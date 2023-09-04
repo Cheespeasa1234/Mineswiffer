@@ -54,7 +54,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     private Color undiscoveredColor = Color.GRAY.brighter();
     private Color discoveredColor = new Color(200, 200, 200, 255);
     private Color tileShadowColor = new Color(100, 100, 100, 100);
-    private Font hintFont = new Font("Spot Mono", Font.BOLD, 14);
+    private Font hintFont = new Font("Cascadia Mono", Font.BOLD, 14);
 
     private Timer fogProgressTimer = new Timer(1000 / 30, e -> {
         fogAnimProg++;
@@ -205,7 +205,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                         g2.drawString("!", fullX + ((float) tileW / 1.5f), boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
                     }
                         
-                } else if (boardManager.flags[x][y] == 1) {
+                } else if (false && boardManager.flags[x][y] == 1) {
                     g2.setColor(Color.RED);
                     g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
                 }

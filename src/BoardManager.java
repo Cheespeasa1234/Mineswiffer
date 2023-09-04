@@ -58,6 +58,9 @@ public class BoardManager {
     }
 
     public void flagTile(int x, int y) {
+
+        if(true) return;
+
         // make sure its not discovered
         if (discovered[x][y])
             return;
@@ -68,7 +71,7 @@ public class BoardManager {
         } else {
             flags[x][y] = 1;
         }
-        
+
     }
 
     public void randomFill(int[][] board, int count, int val) {
