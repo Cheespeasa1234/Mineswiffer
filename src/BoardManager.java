@@ -1,24 +1,25 @@
-import java.awt.Image;
 import java.util.ArrayList;
-import java.util.Random;
 
 public class BoardManager {
-    public int[][] board;
-    public boolean[][] discovered;
-    public int[][] flags; // 0 - no flag, 1 - flagged, 2 - question mark
-    public int[][] bombHints;
-    public int[][] powerHints;
-    public int bombCount = 40, flagCount = 0;
-
     public final int BOARD_EMPTY = 0;
     public final int BOARD_BOMB = 1;
     public final int BOARD_RADAR = 2;
-    public final int STEPPED_ON_RADAR = 1;
-    public final int STEPPED_ON_BOMB = 2;
-    public final int STEPPED_ON_EMPTY = 3;
-    
-    public int boardX = 10, boardW = 600, boardY = 100, boardH = 600, gap = 5, w, h;
-    public boolean gameOver = false;
+    public final int BOARD_ROCKET = 3;
+    public final int STEPPED_ON_EMPTY = 0;
+    public final int STEPPED_ON_BOMB = 1;
+    public final int STEPPED_ON_RADAR = 2;
+    public final int STEPPED_ON_ROCKET = 3;
+
+
+    public int[][] board; // contents of board - 0 - empty, 1 - bomb, 2 - radar
+    public boolean[][] discovered;
+    public int[][] flags; // 0 - no flag, 1 - flagged, 2 - question mark
+    public int[][] bombHints; // n bombs
+    public int[][] powerHints; // UNUSED - has powerup in radius
+    public int bombCount, radarCount, rocketCount, flagCount = 0, discoveredCount = 0;
+
+    public int boardX = 10, boardW = 600, boardY = 100, boardH = 600, gap = 5, w, h, tileW, tileH;
+    public boolean gameOver = false, clickedYet = false, won = false;
 
     public boolean isDiscovered(int x, int y) {
         return discovered[x][y];
@@ -33,56 +34,130 @@ public class BoardManager {
             return bombHints[x][y];
         } else if (val == BOARD_RADAR) {
             return powerHints[x][y];
-        } else throw new IllegalArgumentException("val is inval(id)");
+        } else
+            throw new IllegalArgumentException("val is inval(id)");
     }
 
-    
     public int stepOnTile(int x, int y) {
-        if (board[x][y] == BOARD_BOMB) {
+
+        // if first click, make this the first click
+        if (!clickedYet) {
+            clickedYet = true;
+            createBoard(x, y);
+        }
+        
+        // if dead, dont do anything
+        if (gameOver || flags[x][y] == 1)
+            return STEPPED_ON_EMPTY;
+
+        // if you clicked on a bomb that is not flagged, you lose
+        if (board[x][y] == BOARD_BOMB && flags[x][y] == 0) {
             gameOver();
-            return 2;
-        } else if (discovered[x][y] && board[x][y] == BOARD_RADAR) {
+            return STEPPED_ON_BOMB;
+
+        // if you clicked on a discovered powerup
+        } else if (board[x][y] == BOARD_RADAR && discovered[x][y]) {
+            int temp = board[x][y];
             board[x][y] = BOARD_EMPTY;
-            return 1;
+            return temp;
+        
+        } else if (board[x][y] == BOARD_ROCKET && discovered[x][y]) {
+            int temp = board[x][y];
+            board[x][y] = BOARD_EMPTY;
+
+            for(int i = x; i < board.length; i++) {
+                if (board[i][y] == BOARD_BOMB) {
+                    flags[i][y] = 1;
+                    break;
+                } else {
+                    discovered[i][y] = true;
+                }
+            }
+
+            for(int i = x; i > -1; i--) {
+                if (board[i][y] == BOARD_BOMB) {
+                    flags[i][y] = 1;
+                    break;
+                } else {
+                    discovered[i][y] = true;
+                }
+            }
+    
+            return temp;
+        
+
+        // if clicked on a clear tile, open a cave
         } else if (bombHints[x][y] == 0) {
             ArrayList<int[]> cave = DFS.cave(bombHints, board, x, y, 0);
             for (int[] coord : cave) {
                 discovered[coord[0]][coord[1]] = true;
                 for (int[] neighborCoord : DFS.getNeighbors(coord[0], coord[1], board)) {
+                    if(!discovered[neighborCoord[0]][neighborCoord[1]])
+                        discoveredCount++;
                     discovered[neighborCoord[0]][neighborCoord[1]] = true;
                 }
             }
         }
-        
+
         discovered[x][y] = true;
-        return 3;
+        return STEPPED_ON_EMPTY;
     }
 
     public void flagTile(int x, int y) {
+
+        System.out.println("flagging tile " + x + ", " + y);
 
         // make sure its not discovered
         if (discovered[x][y])
             return;
 
-        // if there is a flag, remove it
-        if (flags[x][y] == 1) {
-            flags[x][y] = 0;
-            flagCount--;
-        } else {
+        // flag the tile
+        if (flags[x][y] == 0) {
             flags[x][y] = 1;
             flagCount++;
+        } else if (flags[x][y] == 1) {
+            flags[x][y] = 2;
+            flagCount--;
+        } else if (flags[x][y] == 2) {
+            flags[x][y] = 0;
+        }
+
+        // check if all bombs are flagged
+        boolean allClear = true;
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[0].length; j++) {
+                int tile = board[i][j];
+                if (tile != BOARD_BOMB) continue;
+                if (flags[i][j] != 1) {
+                    allClear = false;
+                };
+            }
+        }
+
+        if (allClear) {
+            won = true;
+            gameOver();
         }
 
     }
 
-    public void randomFill(int[][] board, int count, int val) {
-        for (int i = 0; i < count; i++) {
+    public void randomFill(int[][] board, int count, int val, int[] dontFill) {
+        for (int i = 0; i < count; i++) { // for each time to spawn a val
             int x = 0, y = 0;
+            boolean validPlacementSpot = true;
             do {
                 x = (int) (Math.random() * board.length);
                 y = (int) (Math.random() * board[0].length);
-            } while(board[x][y] == val);
-            
+                boolean isOnDontFill = dontFill != null && dontFill[0] == x && dontFill[1] == y;
+                boolean isOnEmpty = board[x][y] == BOARD_EMPTY;
+
+                // if not on dontFill and on empty, found a good one
+                if (!isOnDontFill && isOnEmpty)
+                    validPlacementSpot = true;
+                else
+                    validPlacementSpot = false;
+            } while (board[x][y] == val || !validPlacementSpot);
+
             board[x][y] = val;
         }
     }
@@ -97,21 +172,29 @@ public class BoardManager {
         }
     }
 
-    public BoardManager(int w, int h) {
-
-        this.w = w;
-        this.h = h;
-
-        board = new int[w][h];
-        discovered = new boolean[w][h];
-        randomFill(board, bombCount, BOARD_BOMB);
-        randomFill(board, bombCount / 4, BOARD_RADAR);
-        board[0][0] = 0;
+    public void createBoard(int firstClickX, int firstClickY) {
+        randomFill(board, bombCount, BOARD_BOMB, new int[] { firstClickX, firstClickY });
+        randomFill(board, bombCount / 7, BOARD_RADAR, null);
+        randomFill(board, 2, BOARD_ROCKET, null);
 
         bombHints = createHints(board, BOARD_BOMB);
         powerHints = createHints(board, BOARD_RADAR);
+    }
+    
+    public BoardManager(int w, int h, int bombCount, int radarCount, int rocketCount) {
+        
+        this.w = w;
+        this.h = h;
+        this.bombCount = bombCount;
+        this.radarCount = radarCount;
+        this.rocketCount = rocketCount;
+        
+        board = new int[w][h];
+        discovered = new boolean[w][h];
         flags = new int[w][h];
 
+        tileW = boardW / h - gap;
+        tileH = boardH / w - gap;
     }
 
     public int[][] createHints(int[][] board, int value) {
@@ -131,5 +214,28 @@ public class BoardManager {
             }
         }
         return hints;
+    }
+
+    public String[] getToolTip(int x, int y) {
+        String content = "Empty Tile";
+        if (board[x][y] == BOARD_BOMB) {
+            content = "Bomb";
+        } else if (board[x][y] == BOARD_RADAR) {
+            content = "Radar";
+        } else if (board[x][y] == BOARD_ROCKET) {
+            content = "Rocket";
+        }
+
+        String hint = "0 bombs nearby";
+        if (bombHints[x][y] == 1) {
+            hint = "1 bomb nearby";
+        } else if (bombHints[x][y] > 1) {
+            hint = bombHints[x][y] + " bombs nearby";
+        }
+
+        String disc = discovered[x][y] ? "Discovered" : "Undiscovered";
+        String flag = flags[x][y] == 1 ? "Flagged" : flags[x][y] == 2 ? "Unknown" : "No Flag";
+
+        return new String[] { content, hint, disc + ", " + flag };
     }
 }

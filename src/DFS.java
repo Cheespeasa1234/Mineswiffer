@@ -19,9 +19,10 @@ public class DFS {
         visited[x][y] = true;
         result.add(new int[] { x, y });
 
-        // Check horizontally and vertically adjacent tiles
+        // Check horizontally, vertically, and diagonally
         int[][] directions = {
-                { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }
+                { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 },
+                { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 }
         };
 
         for (int[] dir : directions) {
