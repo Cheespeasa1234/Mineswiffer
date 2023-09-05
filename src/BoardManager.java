@@ -8,20 +8,17 @@ public class BoardManager {
     public int[][] flags; // 0 - no flag, 1 - flagged, 2 - question mark
     public int[][] bombHints;
     public int[][] powerHints;
-    public int bombCount = 40;
-    public int flagCount = 0;
+    public int bombCount = 40, flagCount = 0;
 
     public final int BOARD_EMPTY = 0;
     public final int BOARD_BOMB = 1;
     public final int BOARD_RADAR = 2;
+    public final int STEPPED_ON_RADAR = 1;
+    public final int STEPPED_ON_BOMB = 2;
+    public final int STEPPED_ON_EMPTY = 3;
     
-    public int boardX = 10;
-    public int boardW = 600;
-    public int boardY = 100;
-    public int boardH = 600;
-    public int gap = 5;
-
-    public int w, h;
+    public int boardX = 10, boardW = 600, boardY = 100, boardH = 600, gap = 5, w, h;
+    public boolean gameOver = false;
 
     public boolean isDiscovered(int x, int y) {
         return discovered[x][y];
@@ -39,9 +36,7 @@ public class BoardManager {
         } else throw new IllegalArgumentException("val is inval(id)");
     }
 
-    public final int STEPPED_ON_RADAR = 1;
-    public final int STEPPED_ON_BOMB = 2;
-    public final int STEPPED_ON_EMPTY = 3;
+    
     public int stepOnTile(int x, int y) {
         if (board[x][y] == BOARD_BOMB) {
             gameOver();
@@ -94,6 +89,7 @@ public class BoardManager {
 
     public void gameOver() {
         // set everything to discovered
+        gameOver = true;
         for (int i = 0; i < discovered.length; i++) {
             for (int j = 0; j < discovered[0].length; j++) {
                 discovered[i][j] = true;

@@ -189,20 +189,24 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         g2.drawRoundRect(boardManager.boardX, guiY, boardManager.boardW - 3, 75, 10, 10);
 
         // draw the minesweeper text
-        g2.drawString("Flagged: " + boardManager.flagCount + "/" + boardManager.bombCount, boardManager.boardX + 10, guiY + 20);
+        g2.drawString("Flagged: " + boardManager.flagCount + "/" + boardManager.bombCount, boardManager.boardX + 10,
+                guiY + 20);
     }
 
     public double getRadius(int animProg) {
         double prog = (double) animProg % (double) radarAnimLen;
         return Math.pow(prog / (double) radarAnimLen, 2) * 100;
     }
+
     public void paintRadar(Graphics2D g2) {
-        if (radarAnimProg == 0) return;
+        if (radarAnimProg == 0)
+            return;
 
         double radius = getRadius(radarAnimProg);
         g2.setColor(Color.GREEN);
         g2.setStroke(new java.awt.BasicStroke(3));
-        g2.drawOval(radarAnimStartLoc[0] - (int) radius, radarAnimStartLoc[1] - (int) radius, (int) radius * 2, (int) radius * 2);
+        g2.drawOval(radarAnimStartLoc[0] - (int) radius, radarAnimStartLoc[1] - (int) radius, (int) radius * 2,
+                (int) radius * 2);
     }
 
     public void paintComponent(Graphics g) {
@@ -224,48 +228,62 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
 
         int tileW = boardW / boardManager.w - gap;
         int tileH = boardH / boardManager.h - gap;
-        for (int x = 0; x < boardManager.h; x++) {
-            for (int y = 0; y < boardManager.w; y++) {
-                int fullX = boardX + gap + y * (tileW + gap);
-                int fullY = boardY + gap + x * (tileH + gap);
-                g2.setColor(tileShadowColor);
-                g2.fillRoundRect(fullX + 3, fullY + 3, tileW, tileH, 10, 10);
+        for (int x = 0; x < boardManager.h; x++) { for (int y = 0; y < boardManager.w; y++) {
+            int fullX = boardX + gap + y * (tileW + gap);
+            int fullY = boardY + gap + x * (tileH + gap);
+            g2.setColor(tileShadowColor);
+            g2.fillRoundRect(fullX + 3, fullY + 3, tileW, tileH, 10, 10);
 
-                g2.setColor(boardManager.isDiscovered(x, y) ? discoveredColor : undiscoveredColor);
-                g2.fillRoundRect(fullX, boardY + gap + x * (tileH + gap), tileW, tileH, 10, 10);
+            g2.setColor(boardManager.isDiscovered(x, y) ? discoveredColor : undiscoveredColor);
+            g2.fillRoundRect(fullX, boardY + gap + x * (tileH + gap), tileW, tileH, 10, 10);
 
-                if (boardManager.isDiscovered(x, y)) {
-                    if (boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
-                        g2.setColor(Color.RED);
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
-                    } else if (boardManager.getTile(x, y) == boardManager.BOARD_RADAR) {
-                        g2.setColor(Color.GREEN);
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
-                    }
-                    
-                    int bombhint = boardManager.getHint(x, y, boardManager.BOARD_BOMB);
-                    if (bombhint > 0) {
-                        g2.setColor(hintColors[bombhint]);
-                        g2.drawString("" + bombhint, fullX + tileW / 4, boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
-                    }
-
-                } else if (boardManager.flags[x][y] == 1) {
-                    g2.drawImage(flagImage, fullX, boardY + gap + x * (tileH + gap), tileW, tileH, null);
-                } 
-                
-                if (radarAnimStartLoc != null && boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
-                    // get dist from this tile to the radar origin
-                    int screenX = fullX + tileW / 2;
-                    int screenY = boardY + gap + x * (tileH + gap) + tileH / 2;
-                    double dist = Math.sqrt(Math.pow(screenX - radarAnimStartLoc[0], 2) + Math.pow(screenY - radarAnimStartLoc[1], 2));
-                    if(Math.abs(getRadius(radarAnimProg) - dist) < 10) {
-                        g2.setColor(Color.RED);
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
-                    }
+            // if it is discovered, draw the content
+            if (boardManager.isDiscovered(x, y)) {
+                if (boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
+                    g2.setColor(Color.RED);
+                    g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                } else if (boardManager.getTile(x, y) == boardManager.BOARD_RADAR) {
+                    g2.setColor(Color.GREEN);
+                    g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
                 }
-                
+
+                int bombhint = boardManager.getHint(x, y, boardManager.BOARD_BOMB);
+                if (bombhint > 0) {
+                    g2.setColor(hintColors[bombhint]);
+                    g2.drawString("" + bombhint, fullX + tileW / 4,
+                            boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
+                }
+
             }
-        }
+            
+            // draw the flag
+            if (boardManager.flags[x][y] == 1) {
+                g2.drawImage(flagImage, fullX, boardY + gap + x * (tileH + gap), tileW, tileH, null);
+            
+                // draw the gameover format
+                if(boardManager.gameOver && boardManager.getTile(x, y) != boardManager.BOARD_BOMB) {
+                    g2.setColor(Color.RED.darker());
+                    g2.setStroke(new java.awt.BasicStroke(3));
+                    // draw X
+                    g2.drawLine(fullX, boardY + gap + x * (tileH + gap), fullX + tileW, boardY + gap + x * (tileH + gap) + tileH);
+                    g2.drawLine(fullX + tileW, boardY + gap + x * (tileH + gap), fullX, boardY + gap + x * (tileH + gap) + tileH);
+                }
+            } 
+
+            // draw the radar animation
+            if (radarAnimStartLoc != null && boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
+                // get dist from this tile to the radar origin
+                int screenX = fullX + tileW / 2;
+                int screenY = boardY + gap + x * (tileH + gap) + tileH / 2;
+                double dist = Math.sqrt(
+                        Math.pow(screenX - radarAnimStartLoc[0], 2) + Math.pow(screenY - radarAnimStartLoc[1], 2));
+                if (Math.abs(getRadius(radarAnimProg) - dist) < 10) {
+                    g2.setColor(Color.RED);
+                    g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                }
+            }
+
+        }}
 
         // mouse hover and debug hints
         if (mouseLoc != null) {
