@@ -105,10 +105,6 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
             for (int j = 0; j < numCols; j++) {
                 // if not discovered and the fade animation hasn't yet increased to fogAnimLen
                 if (fadeProg[i][j] < fogAnimLen) {
-                    // lower the transparency as the fadeProg increases
-                    float transparency = 1 - (float) fadeProg[i][j] / fogAnimLen;
-    
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3));
                     drawFogTile(g2, i, j, tileSize, numCircles, rand);
                 }
             }
@@ -134,7 +130,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                     + rand.nextInt(tileSize / 2) - tileSize / 4 + boardManager.boardY;
 
             // Draw a transparent fog circle
-
+            
+            float transparency = 1 - (float) fadeProg[i][j] / fogAnimLen;
             if(mouseLoc != null) {
                 //use x, y, mousex, mousey functions to change x and y to move away from the mouse the closer the mouse is
                 int dx = x - mousex;
@@ -142,11 +139,15 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                 double dist = Math.sqrt(dx * dx + dy * dy);
                 double distFactor = 1 - dist / 100;
                 if(distFactor < 0) distFactor = 0;
-                x += dx * distFactor;
-                y += dy * distFactor;
+                // x += dx * distFactor;
+                // y += dy * distFactor;
+
+                AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3 * (float) (1 - distFactor));
+                g2.setComposite(ac);
+            } else {
+                AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3);
+                g2.setComposite(ac);
                 
-
-
             }
 
             drawFogCircle(g2, x, y, (int) ((double) tileSize * 0.9d));
