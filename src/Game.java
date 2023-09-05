@@ -7,7 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
-
+import java.awt.SystemColor;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -38,10 +38,14 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     private int fogAnimProg = 0;
     private int fogAnimLen = 200;
     private Image fogImage;
+    private Image flagImage;
+    private int radarAnimProg = 0;
+    private int radarAnimLen = 30;
+    private int radarAnimIters = 3;
+    private int[] radarAnimStartLoc;
 
     private int mousex;
     private int mousey;
-
 
     private Color[] hintColors = {
             Color.BLACK,
@@ -65,10 +69,18 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         if (fogAnimProg > fogAnimLen)
             fogAnimProg = 0;
 
-        for(int i = 0; i < fadeProg.length; i++) {
-            for(int j = 0; j < fadeProg[0].length; j++) {
+        if (radarAnimProg > 0 && radarAnimProg < radarAnimLen * radarAnimIters) {
+            radarAnimProg++;
+        } else {
+            radarAnimProg = 0;
+        }
+
+        System.out.println("radar animation progress: " + radarAnimProg + " / " + radarAnimLen);
+
+        for (int i = 0; i < fadeProg.length; i++) {
+            for (int j = 0; j < fadeProg[0].length; j++) {
                 // if its fadeProg is != 0, then it is fading
-                if(boardManager.isDiscovered(i, j)) {
+                if (boardManager.isDiscovered(i, j)) {
                     fadeProg[i][j] = Math.min(fadeProg[i][j] + 8, fogAnimLen);
                 }
             }
@@ -88,8 +100,10 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
 
         fadeProg = new int[w][h];
         File fogImageFile = new File("src/fog.png");
-        System.out.println(fogImageFile.getAbsolutePath() + " << path");
         fogImage = new ImageIcon(fogImageFile.getPath()).getImage();
+
+        File flagImageFile = new File("src/flag.png");
+        flagImage = new ImageIcon(flagImageFile.getPath()).getImage();
 
         fogProgressTimer.start();
     }
@@ -130,26 +144,29 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                     + rand.nextInt(tileSize / 2) - tileSize / 4 + boardManager.boardY;
 
             // Draw a transparent fog circle
-            
+
             float transparency = 1 - (float) fadeProg[i][j] / fogAnimLen;
-            if(mouseLoc != null) {
-                //use x, y, mousex, mousey functions to change x and y to move away from the mouse the closer the mouse is
+            float transparencyMod = 1f;
+            if (mouseLoc != null) {
+                // use x, y, mousex, mousey functions to change x and y to move away from the
+                // mouse the closer the mouse is
                 int dx = x - mousex;
                 int dy = y - mousey;
                 double dist = Math.sqrt(dx * dx + dy * dy);
                 double distFactor = 1 - dist / 100;
-                if(distFactor < 0) distFactor = 0;
+                if (distFactor < 0)
+                    distFactor = 0;
                 // x += dx * distFactor;
                 // y += dy * distFactor;
 
-                AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3 * (float) (1 - distFactor));
-                g2.setComposite(ac);
-            } else {
-                AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency / 3);
-                g2.setComposite(ac);
-                
+                transparencyMod = (float) (1 - distFactor);
+            }
+            if (boardManager.flags[i][j] > 0) {
+                transparencyMod = 0;
             }
 
+            AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transparency * transparencyMod / 3);
+            g2.setComposite(ac);
             drawFogCircle(g2, x, y, (int) ((double) tileSize * 0.9d));
         }
     }
@@ -172,7 +189,20 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         g2.drawRoundRect(boardManager.boardX, guiY, boardManager.boardW - 3, 75, 10, 10);
 
         // draw the minesweeper text
-        g2.drawString("Flagged: 0/" + boardManager.bombCount, boardManager.boardX + 10, guiY + 20);
+        g2.drawString("Flagged: " + boardManager.flagCount + "/" + boardManager.bombCount, boardManager.boardX + 10, guiY + 20);
+    }
+
+    public double getRadius(int animProg) {
+        double prog = (double) animProg % (double) radarAnimLen;
+        return Math.pow(prog / (double) radarAnimLen, 2) * 100;
+    }
+    public void paintRadar(Graphics2D g2) {
+        if (radarAnimProg == 0) return;
+
+        double radius = getRadius(radarAnimProg);
+        g2.setColor(Color.GREEN);
+        g2.setStroke(new java.awt.BasicStroke(3));
+        g2.drawOval(radarAnimStartLoc[0] - (int) radius, radarAnimStartLoc[1] - (int) radius, (int) radius * 2, (int) radius * 2);
     }
 
     public void paintComponent(Graphics g) {
@@ -200,11 +230,10 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                 int fullY = boardY + gap + x * (tileH + gap);
                 g2.setColor(tileShadowColor);
                 g2.fillRoundRect(fullX + 3, fullY + 3, tileW, tileH, 10, 10);
-                if (boardManager.isDiscovered(x, y))
-                    g2.setColor(discoveredColor);
-                else
-                    g2.setColor(undiscoveredColor);
+
+                g2.setColor(boardManager.isDiscovered(x, y) ? discoveredColor : undiscoveredColor);
                 g2.fillRoundRect(fullX, boardY + gap + x * (tileH + gap), tileW, tileH, 10, 10);
+
                 if (boardManager.isDiscovered(x, y)) {
                     if (boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
                         g2.setColor(Color.RED);
@@ -213,26 +242,32 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                         g2.setColor(Color.GREEN);
                         g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
                     }
-                    int bombhint = boardManager.getHint(x, y, boardManager.BOARD_BOMB);
-                    int powerhint = boardManager.getHint(x, y, boardManager.BOARD_RADAR);
-                    g2.setColor(hintColors[bombhint]);
-                    if (bombhint > 0) {
-                        g2.drawString("" + boardManager.getHint(x, y, boardManager.BOARD_BOMB), fullX + tileW / 4,
-                                boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
-                    }
                     
-                    if (powerhint > 0) {
-                        g2.setColor(Color.YELLOW);
-                        g2.drawString("!", fullX + ((float) tileW / 1.5f), boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
+                    int bombhint = boardManager.getHint(x, y, boardManager.BOARD_BOMB);
+                    if (bombhint > 0) {
+                        g2.setColor(hintColors[bombhint]);
+                        g2.drawString("" + bombhint, fullX + tileW / 4, boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
                     }
-                        
-                } else if (false && boardManager.flags[x][y] == 1) {
-                    g2.setColor(Color.RED);
-                    g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+
+                } else if (boardManager.flags[x][y] == 1) {
+                    g2.drawImage(flagImage, fullX, boardY + gap + x * (tileH + gap), tileW, tileH, null);
+                } 
+                
+                if (radarAnimStartLoc != null && boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
+                    // get dist from this tile to the radar origin
+                    int screenX = fullX + tileW / 2;
+                    int screenY = boardY + gap + x * (tileH + gap) + tileH / 2;
+                    double dist = Math.sqrt(Math.pow(screenX - radarAnimStartLoc[0], 2) + Math.pow(screenY - radarAnimStartLoc[1], 2));
+                    if(Math.abs(getRadius(radarAnimProg) - dist) < 10) {
+                        g2.setColor(Color.RED);
+                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                    }
                 }
+                
             }
         }
 
+        // mouse hover and debug hints
         if (mouseLoc != null) {
             int x = mouseLoc[0];
             int y = mouseLoc[1];
@@ -242,7 +277,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         if (debug && mouseLoc != null) {
             int x = mouseLoc[0];
             int y = mouseLoc[1];
-            if (boardManager.getHint(x, y, boardManager.BOARD_BOMB) == 0 && boardManager.getTile(x, y) != boardManager.BOARD_BOMB) {
+            if (boardManager.getHint(x, y, boardManager.BOARD_BOMB) == 0
+                    && boardManager.getTile(x, y) != boardManager.BOARD_BOMB) {
                 ArrayList<int[]> cave = DFS.cave(boardManager.bombHints, boardManager.board, x, y, 0);
                 for (int[] coord : cave) {
                     g2.setColor(new Color(100, 100, 0, 100));
@@ -254,6 +290,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
 
         paintGUI(g2);
         paintFog(g2);
+        paintRadar(g2);
     }
 
     @Override
@@ -305,7 +342,11 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
             int x = mouseLoc[0];
             int y = mouseLoc[1];
             if (e.getButton() == MouseEvent.BUTTON1) {
-                boardManager.stepOnTile(x, y);
+                int ret = boardManager.stepOnTile(x, y);
+                if (ret == boardManager.STEPPED_ON_RADAR) {
+                    radarAnimProg = 1;
+                    radarAnimStartLoc = new int[] { e.getX(), e.getY() };
+                }
             } else if (e.getButton() == MouseEvent.BUTTON3) {
                 boardManager.flagTile(x, y);
             }

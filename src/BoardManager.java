@@ -5,10 +5,11 @@ import java.util.Random;
 public class BoardManager {
     public int[][] board;
     public boolean[][] discovered;
-    public int[][] flags;
+    public int[][] flags; // 0 - no flag, 1 - flagged, 2 - question mark
     public int[][] bombHints;
     public int[][] powerHints;
     public int bombCount = 40;
+    public int flagCount = 0;
 
     public final int BOARD_EMPTY = 0;
     public final int BOARD_BOMB = 1;
@@ -38,12 +39,16 @@ public class BoardManager {
         } else throw new IllegalArgumentException("val is inval(id)");
     }
 
-    public void stepOnTile(int x, int y) {
-        if (discovered[x][y])
-            return;
-        discovered[x][y] = true;
+    public final int STEPPED_ON_RADAR = 1;
+    public final int STEPPED_ON_BOMB = 2;
+    public final int STEPPED_ON_EMPTY = 3;
+    public int stepOnTile(int x, int y) {
         if (board[x][y] == BOARD_BOMB) {
             gameOver();
+            return 2;
+        } else if (discovered[x][y] && board[x][y] == BOARD_RADAR) {
+            board[x][y] = BOARD_EMPTY;
+            return 1;
         } else if (bombHints[x][y] == 0) {
             ArrayList<int[]> cave = DFS.cave(bombHints, board, x, y, 0);
             for (int[] coord : cave) {
@@ -52,14 +57,13 @@ public class BoardManager {
                     discovered[neighborCoord[0]][neighborCoord[1]] = true;
                 }
             }
-        } else {
-            discovered[x][y] = true;
         }
+        
+        discovered[x][y] = true;
+        return 3;
     }
 
     public void flagTile(int x, int y) {
-
-        if(true) return;
 
         // make sure its not discovered
         if (discovered[x][y])
@@ -68,8 +72,10 @@ public class BoardManager {
         // if there is a flag, remove it
         if (flags[x][y] == 1) {
             flags[x][y] = 0;
+            flagCount--;
         } else {
             flags[x][y] = 1;
+            flagCount++;
         }
 
     }
@@ -108,6 +114,7 @@ public class BoardManager {
 
         bombHints = createHints(board, BOARD_BOMB);
         powerHints = createHints(board, BOARD_RADAR);
+        flags = new int[w][h];
 
     }
 
