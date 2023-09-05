@@ -245,6 +245,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         Graphics2D g2 = (Graphics2D) g;
         g2.setFont(hintFont);
 
+        g2.addRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
+
         // draw the actual board
         g2.setColor(Color.GRAY);
         g2.fillRoundRect(boardX, boardY, boardW, boardH, 10, 10);
