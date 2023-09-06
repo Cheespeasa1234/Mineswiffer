@@ -4,7 +4,9 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.List;
 import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
 import java.awt.SystemColor;
@@ -14,6 +16,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -54,8 +57,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     private Color undiscoveredColor = Color.GRAY.brighter();
     private Color discoveredColor = new Color(200, 200, 200, 255);
     private Color tileShadowColor = new Color(100, 100, 100, 100);
-    private Font hintFont = new Font("Cascadia Mono", Font.BOLD, 14);
-    private Font mainFont = new Font("Cascadia Mono", Font.BOLD, 20);
+    private Font hintFont;
+    private Font mainFont;
 
     private Timer fogProgressTimer = new Timer(1000 / 30, e -> {
         radarRotAnimProg += 2;
@@ -96,6 +99,17 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         fogImage = new ImageIcon(Game.class.getResource("fog.png")).getImage();
         flagImage = new ImageIcon(Game.class.getResource("flag.png")).getImage();
         radarImage = new ImageIcon(Game.class.getResource("radar.png")).getImage();
+
+        // if Cascadia Mono font is installed on system, use it
+        String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        if (Arrays.asList(fonts).contains("Cascadia Mono")) {
+            hintFont = new Font("Cascadia Mono", Font.BOLD, 14);
+            mainFont = new Font("Cascadia Mono", Font.BOLD, 20);
+        } else {
+            hintFont = new Font("Arial", Font.BOLD, 14);
+            mainFont = new Font("Arial", Font.BOLD, 20);
+        }
+
 
         fogProgressTimer.start();
     }
@@ -202,6 +216,9 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         int len = g2.getFontMetrics().stringWidth(txt);
         g2.drawString(txt, boardManager.boardX + boardManager.boardW - len - 10, guiY + 20);
 
+    }
+
+    public void drawToolTip(Graphics2D g2) {
         // draw tooltip
         if (debug && mouseLoc != null && boardManager.clickedYet) {
             g2.setFont(hintFont);
@@ -245,7 +262,13 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         Graphics2D g2 = (Graphics2D) g;
         g2.setFont(hintFont);
 
-        g2.addRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
+        RenderingHints textOnly = new RenderingHints(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        RenderingHints interpolation = new RenderingHints(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                
+        g2.addRenderingHints(textOnly);
+        g2.addRenderingHints(interpolation);
+
+        paintGUI(g2);
 
         // draw the actual board
         g2.setColor(Color.GRAY);
@@ -363,9 +386,9 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
             }
         }
 
-        paintGUI(g2);
         paintFog(g2);
         paintRadar(g2);
+        drawToolTip(g2);
     }
 
     @Override
