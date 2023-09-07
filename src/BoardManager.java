@@ -38,6 +38,12 @@ public class BoardManager {
             throw new IllegalArgumentException("val is inval(id)");
     }
 
+    public boolean opensCave(int x, int y, int[][] boardb) {
+        ArrayList<int[]> cave = DFS.cave(bombHints, boardb, x, y, 0);
+        System.out.println("Cave size: " + cave.size());
+        return cave.size() >= 5;
+    }
+
     public int stepOnTile(int x, int y) {
 
         // if first click, make this the first click
@@ -66,7 +72,7 @@ public class BoardManager {
             board[x][y] = BOARD_EMPTY;
 
             for(int i = x; i < board.length; i++) {
-                if (board[i][y] == BOARD_BOMB) {
+                if (board[i][y] == BOARD_BOMB && flags[i][y] == 0) {
                     flags[i][y] = 1;
                     break;
                 } else {
@@ -108,7 +114,7 @@ public class BoardManager {
         System.out.println("flagging tile " + x + ", " + y);
 
         // make sure its not discovered
-        if (discovered[x][y])
+        if (!clickedYet || discovered[x][y])
             return;
 
         // flag the tile
@@ -116,7 +122,7 @@ public class BoardManager {
             flags[x][y] = 1;
             flagCount++;
         } else if (flags[x][y] == 1) {
-            flags[x][y] = 2;
+            flags[x][y] = 0;
             flagCount--;
         } else if (flags[x][y] == 2) {
             flags[x][y] = 0;
@@ -143,22 +149,37 @@ public class BoardManager {
 
     public void randomFill(int[][] board, int count, int val, int[] dontFill) {
         for (int i = 0; i < count; i++) { // for each time to spawn a val
-            int x = 0, y = 0;
-            boolean validPlacementSpot = true;
-            do {
-                x = (int) (Math.random() * board.length);
-                y = (int) (Math.random() * board[0].length);
-                boolean isOnDontFill = dontFill != null && dontFill[0] == x && dontFill[1] == y;
-                boolean isOnEmpty = board[x][y] == BOARD_EMPTY;
+            int x = (int) (Math.random() * board.length);
+            int y = (int) (Math.random() * board[0].length);
 
-                // if not on dontFill and on empty, found a good one
-                if (!isOnDontFill && isOnEmpty)
-                    validPlacementSpot = true;
-                else
-                    validPlacementSpot = false;
-            } while (board[x][y] == val || !validPlacementSpot);
+            // if on top of dontFill, try again
+            if (dontFill != null && x == dontFill[0] && y == dontFill[1]) {
+                i--;
+                continue;
+            }
 
+            // if on top of another val, try again
+            if (board[x][y] == val) {
+                i--;
+                continue;
+            }
+
+            // get distance to dontfill
+            int distLim = 3;
+            int dist = distLim + 1;
+            if (dontFill != null) {
+                dist = Math.abs(x - dontFill[0]) + Math.abs(y - dontFill[1]);
+            }
+
+            // if too close to dontFill, try again
+            if (dist < distLim) {
+                i--;
+                continue;
+            }
+
+            // set the tile
             board[x][y] = val;
+
         }
     }
 
@@ -178,7 +199,6 @@ public class BoardManager {
         randomFill(board, 2, BOARD_ROCKET, null);
 
         bombHints = createHints(board, BOARD_BOMB);
-        powerHints = createHints(board, BOARD_RADAR);
     }
     
     public BoardManager(int w, int h, int bombCount, int radarCount, int rocketCount) {

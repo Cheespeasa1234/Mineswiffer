@@ -14,6 +14,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -39,12 +40,12 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     // animation variables
     private int[][] fadeProg;
     private int fogAnimProg = 0, fogAnimLen = 200;
-    private int radarAnimProg = 0, radarAnimLen = 30, radarAnimIters = 3;
+    private int radarAnimProg = 0, radarAnimLen = 30, radarAnimIters = 3; // the radar beam itself
     private int[] radarAnimStartLoc;
     private int radarRotAnimProg = 0, radarRotAnimLen = 360;
 
     // assets
-    private Image fogImage, flagImage, radarImage;
+    private Image fogImage, flagImage, radarImage, bombImage, rocketImage;
     private Color[] hintColors = {
             Color.BLACK, new Color(0, 0, 255), new Color(0, 128, 0),
             new Color(255, 0, 0), new Color(0, 0, 128), new Color(128, 0, 0),
@@ -66,6 +67,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
 
         if (radarAnimProg > 0 && radarAnimProg < radarAnimLen * radarAnimIters) {
             radarAnimProg++;
+        
+            
         } else {
             radarAnimProg = 0;
         }
@@ -96,6 +99,8 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         fogImage = new ImageIcon(Game.class.getResource("fog.png")).getImage();
         flagImage = new ImageIcon(Game.class.getResource("flag.png")).getImage();
         radarImage = new ImageIcon(Game.class.getResource("radar.png")).getImage();
+        bombImage = new ImageIcon(Game.class.getResource("bomb.png")).getImage();
+        rocketImage = new ImageIcon(Game.class.getResource("rocket.png")).getImage();
 
         fogProgressTimer.start();
     }
@@ -275,8 +280,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                     // draw the content of the tile (bombs, powerups etc)
                     int tile = boardManager.getTile(x, y);
                     if (tile == boardManager.BOARD_BOMB) {
-                        g2.setColor(Color.RED);
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                        g2.drawImage(bombImage, fullX, boardY + gap + x * (tileH + gap), tileW, tileH, null);
                     } else if (tile == boardManager.BOARD_RADAR) {
 
                         int tileCenterX = fullX + tileW / 2;
@@ -287,17 +291,16 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                         g2.rotate(-Math.toRadians(startRot + radarRotAnimProg), tileCenterX, tileCenterY);
 
                     } else if (tile == boardManager.BOARD_ROCKET) {
-                        g2.setColor(Color.BLUE);
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                        int off = 10;
+                        g2.drawImage(rocketImage, fullX - off, boardY + gap + x * (tileH + gap), tileW + off * 2, tileH, null);
                     }
 
                     // draw the number
                     int bombhint = boardManager.getHint(x, y, boardManager.BOARD_BOMB);
                     if (bombhint > 0) {
                         g2.setColor(
-                                (tile == boardManager.BOARD_RADAR || tile == boardManager.BOARD_ROCKET) ? Color.WHITE
-                                        : hintColors[bombhint]);
-                        g2.drawString("" + bombhint, fullX + tileW / 4,
+                                (tile == boardManager.BOARD_RADAR || tile == boardManager.BOARD_ROCKET) ? Color.WHITE : hintColors[bombhint-1]);
+                        g2.drawString("" + bombhint, fullX + tileW / 3,
                                 boardY + gap + x * (tileH + gap) + ((float) tileH / 1.5f));
                     }
                 }
@@ -321,19 +324,11 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
                 // draw the radar animation callout
                 if (boardManager.flags[x][y] == 0 && radarAnimStartLoc != null
                         && boardManager.getTile(x, y) == boardManager.BOARD_BOMB) {
-                    // get dist from this tile to the radar origin
-                    int screenX = fullX + tileW / 2;
-                    int screenY = boardY + gap + x * (tileH + gap) + tileH / 2;
-                    double dx = Math.pow(screenX - radarAnimStartLoc[0], 2);
-                    double dy = Math.pow(screenY - radarAnimStartLoc[1], 2);
-                    double distToRing = Math.sqrt(dx + dy) - getRadius(radarAnimProg);
-                    
-                    // if within distance, draw the ring
-                    if (distToRing < 10) {
-                        // if ring is very close, draw solid
-                        int alpha = (int) (255 * Math.min(1,Math.max(0, (1 - distToRing / 10))));
-                        g2.setColor(new Color(255, 0, 0, alpha));
-                        g2.fillOval(fullX, boardY + gap + x * (tileH + gap), tileW, tileH);
+                    double radius = getRadius(radarAnimProg);
+                    boolean closeToRing = Math.abs(fullX + tileW / 2 - radarAnimStartLoc[0]) < radius
+                            && Math.abs(boardY + gap + x * (tileH + gap) + tileH / 2 - radarAnimStartLoc[1]) < radius;
+                    if(closeToRing) {
+                        g2.drawImage(bombImage, fullX, boardY + gap + x * (tileH + gap), tileW, tileH, null);
                     }
                 }
 
