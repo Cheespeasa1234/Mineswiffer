@@ -18,7 +18,7 @@ public class BoardManager {
     public int[][] powerHints; // UNUSED - has powerup in radius
     public int bombCount, radarCount, rocketCount, flagCount = 0, discoveredCount = 0;
 
-    public int boardX = 10, boardW = 600, boardY = 100, boardH = 600, gap = 5, w, h, tileW, tileH;
+    public int boardX = 10, boardW = 600, boardY = 120, boardH = 600, gap = 5, w, h, tileW, tileH;
     public boolean gameOver = false, clickedYet = false, won = false;
 
     public boolean isDiscovered(int x, int y) {
@@ -165,10 +165,12 @@ public class BoardManager {
             }
 
             // get distance to dontfill
-            int distLim = 3;
-            int dist = distLim + 1;
+            double distLim = 2.0;
+            double dist = distLim + 1.0;
             if (dontFill != null) {
-                dist = Math.abs(x - dontFill[0]) + Math.abs(y - dontFill[1]);
+                double dx = x - dontFill[0];
+                double dy = y - dontFill[1];
+                dist = Math.sqrt(dx * dx + dy * dy);
             }
 
             // if too close to dontFill, try again
