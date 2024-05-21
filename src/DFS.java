@@ -1,7 +1,22 @@
 import java.util.ArrayList;
 
+/**
+ * Implementation of the depth-first-search algorithm function, and some wrappers.
+ */
 public class DFS {
 
+    /**
+     * Wrapper function for {@link #dfs(int[][], int[][], int, int, int, boolean[][])}.
+     * Get a list of boxes that are consecutively empty.
+     * When a tile with no adjacent bombs is clicked, use this to also reveal adjacent blank tiles.
+     * @param hints The number of adjacent bombs of every tile.
+     * @param board The tile data.
+     * @param startX The x index to start.
+     * @param startY The y index to start.
+     * @param value The value to find copies of.
+     * @returns A list of recursively adjacent copies of the tile.
+     * @see DFS#dfs(int[][], int[][], int, int, int, boolean[][], ArrayList)
+     */
     public static ArrayList<int[]> cave(int[][] hints, int[][] board, int startX, int startY, int value) {
         ArrayList<int[]> result = new ArrayList<>();
         boolean[][] visited = new boolean[hints.length][hints[0].length];
@@ -9,6 +24,17 @@ public class DFS {
         return result;
     }
 
+    /**
+     * Visit every tile from a starting point, and reveal adjacent identical tiles.
+     * This method does not create its own result array because it is recursive and needs to remember what tiles it visited, and the results so far.
+     * @param hints The number of adjacent bombs of every tile.
+     * @param board The tile data.
+     * @param x The x index to start.
+     * @param y The y index to start.
+     * @param value The tile data value to find identical pairs of.
+     * @param visited An internal list of tiles that have been searched already.
+     * @param result The array that will contain the results of the search.
+     */
     public static void dfs(int[][] hints, int[][] board, int x, int y, int value, boolean[][] visited,
             ArrayList<int[]> result) {
 
@@ -32,6 +58,21 @@ public class DFS {
         }
     }
 
+    /**
+     * Get the neighbor tiles (if any) of a given point.
+     * If a tile is in the corner, or on the edge, it has less neighbors.
+     * For example:
+     * <pre>
+     *- - -
+     *- x *
+     *- * *
+     * </pre>
+     * In that example, x only has three neighbors, the three stars.
+     * @param x The x index of the tile.
+     * @param y The y index of the tile.
+     * @param board The board to search.
+     * @return The list of tiles that are neighbors.
+     */
     public static int[][] getNeighbors(int x, int y, int[][] board) {
         // get all the surrounding coords
         ArrayList<int[]> neighbors = new ArrayList<int[]>();

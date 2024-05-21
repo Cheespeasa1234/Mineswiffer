@@ -1,5 +1,4 @@
 import java.awt.AlphaComposite;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -8,32 +7,22 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.List;
-import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
-import java.awt.SystemColor;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.geom.Ellipse2D;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.border.TitledBorder;
 
 public class Game extends JPanel implements MouseListener, MouseMotionListener, KeyListener {
 
@@ -43,22 +32,20 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     // game variables
     private BoardManager boardManager;
     private int[] mouseLoc;
+    private int mousex, mousey;
     private boolean debug = false;
     private boolean shiftDown = false;
-    private int mousex;
-    private int mousey;
     
     // animation variables
     private int[][] fadeProg;
-    private int fogAnimProg = 0, fogAnimLen = 200;
-    private int radarAnimProg = 0, radarAnimLen = 30, radarAnimIters = 3; // the radar beam itself
     private int[] radarAnimStartLoc;
-    private int radarRotAnimProg = 0, radarRotAnimLen = 360;
-    
-    private int size = 16, sizePrev = 16;
-    private int bombCount = 40, bombCountPrev = 40;
-    private int radarCount = 5, radarCountPrev = 5;
-    private int rocketCount = 3, rocketCountPrev = 3;
+    private int fogAnimProg = 0, fogAnimLen = 200,
+        radarAnimProg = 0, radarAnimLen = 30, radarAnimIters = 3, // the radar beam itself
+        radarRotAnimProg = 0, radarRotAnimLen = 360, // rotating the radar
+        size = 16, sizePrev = 16, // tile size
+        bombCount = 40, bombCountPrev = 40, // how many of powers to put
+        radarCount = 5, radarCountPrev = 5,
+        rocketCount = 3, rocketCountPrev = 3;
     
     // assets
     private Image fogImage, flagImage, radarImage, bombImage, rocketImage;
@@ -69,12 +56,10 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     };
     
     // swing stuff
-    private Color undiscoveredColor = Color.GRAY.brighter();
-    private Color discoveredColor = new Color(200, 200, 200, 255);
-    private Color tileShadowColor = new Color(100, 100, 100, 100);
-    private Font hintFont;
-    private Font mainFont;
-    private Font smallFont;
+    private Color undiscoveredColor = Color.GRAY.brighter(),
+        discoveredColor = new Color(200, 200, 200, 255),
+        tileShadowColor = new Color(100, 100, 100, 100);
+    private Font hintFont, mainFont, smallFont;
     private JButton resetButton;
     
     private Timer fogProgressTimer = new Timer(1000 / 30, e -> {
@@ -128,7 +113,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
         } else {
             hintFont = new Font("Arial", Font.BOLD, 16);
             mainFont = new Font("Arial", Font.BOLD, 20);
-            smallFont = new Font("Arial", Font.PLAIN, 20);
+            smallFont = new Font("Arial", Font.PLAIN, 10);
         }
 
         JPanel configPanel = new JPanel();
@@ -605,7 +590,7 @@ public class Game extends JPanel implements MouseListener, MouseMotionListener, 
     private static JPanel gamePanel;
 
     public static void createAndShowGUI() {
-        JFrame frame = new JFrame("You're Mother");
+        JFrame frame = new JFrame("Mineswiffer");
         gamePanel = new Game();
 
         frame.getContentPane().add(gamePanel);

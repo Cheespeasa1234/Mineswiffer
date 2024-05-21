@@ -1,15 +1,16 @@
 import java.util.ArrayList;
 
 public class BoardManager {
-    public final int BOARD_EMPTY = 0;
-    public final int BOARD_BOMB = 1;
-    public final int BOARD_RADAR = 2;
-    public final int BOARD_ROCKET = 3;
-    public final int STEPPED_ON_EMPTY = 0;
-    public final int STEPPED_ON_BOMB = 1;
-    public final int STEPPED_ON_RADAR = 2;
-    public final int STEPPED_ON_ROCKET = 3;
 
+    // The tile states
+    public static final int BOARD_EMPTY = 0;
+    public static final int BOARD_BOMB = 1;
+    public static final int BOARD_RADAR = 2;
+    public static final int BOARD_ROCKET = 3;
+    public static final int STEPPED_ON_EMPTY = 0;
+    public static final int STEPPED_ON_BOMB = 1;
+    public static final int STEPPED_ON_RADAR = 2;
+    public static final int STEPPED_ON_ROCKET = 3;
 
     public int[][] board; // contents of board - 0 - empty, 1 - bomb, 2 - radar
     public boolean[][] discovered;
